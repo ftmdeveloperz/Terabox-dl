@@ -10,9 +10,9 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Constants
-API_ID = 12345678  # Replace with your own
-API_HASH = "your_api_hash"
-BOT_TOKEN = "your_bot_token"
+API_ID = int(os.getenv("API_ID", 22141398))
+API_HASH = os.getenv("API_HASH", '0c8f8bd171e05e42d6f6e5a6f4305389')
+BOT_TOKEN = os.getenv("BOT_TOKEN", "7575260816:AAGQeiKMKUGZF19yid7LylIL9CG4zIy135w")
 
 # Queues and Tracking
 user_queues = {}
