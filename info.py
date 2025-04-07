@@ -25,5 +25,5 @@ START_TEXT = "Welcome to the bot!"
 BOT_USERNAME = "@your_bot"
 
 ᴄʀᴇᴀᴛᴇᴅ ʙʏ: @ftmdeveloperz
-"""
+
 PORT = int(os.getenv("PORT", 8080))
