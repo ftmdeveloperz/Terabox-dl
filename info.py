@@ -1,6 +1,7 @@
 
 
 import os
+from os import getenv, environ
 
 # Telegram Bot & API Configuration
 BOT_TOKEN = os.getenv("BOT_TOKEN", "7575260816:AAGQeiKMKUGZF19yid7LylIL9CG4zIy135w")
