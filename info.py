@@ -19,15 +19,10 @@ TERABOX_API = os.getenv("TERABOX_API", "https://tera-dl.vercel.app/api?link=")
 FILLED = os.getenv("FILLED", "■")
 EMPTY = os.getenv("EMPTY", "□")
 
-# Start Message Text
-START_TXT = f"""
-**ʜᴇʏ, ɪ'ᴍ {BOT_NAME}**
-ꜱᴇɴᴅ ᴍᴇ ᴀɴʏ ᴛᴇʀᴀʙᴏx ʟɪɴᴋ ᴀɴᴅ ɪ ᴡɪʟʟ ꜰᴇᴛᴄʜ ᴅɪʀᴇᴄᴛ ᴅᴏᴡɴʟᴏᴀᴅ ʟɪɴᴋ & ᴜᴘʟᴏᴀᴅ ɪᴛ ᴛᴏ ᴛᴇʟᴇɢʀᴀᴍ.
 
-➪ ꜰᴀꜱᴛ ᴜᴘʟᴏᴀᴅ ᴡɪᴛʜ ᴘʀᴏɢʀᴇꜱꜱ ʙᴀʀ
-➪ ꜱᴜᴘᴘᴏʀᴛꜱ ʟᴀʀɢᴇ ꜰɪʟᴇꜱ
-➪ ᴀᴜᴛᴏ ᴅᴇʟᴇᴛɪᴏɴ ꜰʀᴏᴍ ꜱᴇʀᴠᴇʀ
-➪ ꜱᴛᴀᴛꜱ, ǫᴜᴇᴜᴇ & ᴀᴅᴍɪɴ ꜱʏꜱᴛᴇᴍ
+
+START_TEXT = "Welcome to the bot!"
+BOT_USERNAME = "@your_bot"
 
 ᴄʀᴇᴀᴛᴇᴅ ʙʏ: @ftmdeveloperz
 """
