@@ -15,7 +15,7 @@ async def start_cmd(bot, message: Message):
         [InlineKeyboardButton("👑 Dᴇᴠᴇʟᴏᴘᴇʀ", url="https://t.me/ftmdeveloperz")]
     ])
     await message.reply_text(
-        text=START_TEXT.format(message.from_user.first_name),
+        text=f"**ʜᴇʏ {message.from_user.first_name}!\n\nɪ'ᴍ ᴀ ғᴀsᴛ & sᴍᴀʀᴛ Tᴇʀᴀʙᴏx ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴏʀ.**\n\n⏬ Sᴇɴᴅ ᴍᴇ ᴀɴʏ Tᴇʀᴀʙᴏx ʟɪɴᴋ ᴛᴏ ɢᴇɴᴇʀᴀᴛᴇ ᴀ ᴅɪʀᴇᴄᴛ ᴅᴏᴡɴʟᴏᴀᴅ ʟɪɴᴋ.",
         reply_markup=buttons,
         disable_web_page_preview=True
     )
