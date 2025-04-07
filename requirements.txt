@@ -1,0 +1,8 @@
+pyrogram
+tgcrypto
+flask
+aiohttp
+requests
+urllib3
+humanize
+psutil
