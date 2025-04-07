@@ -1,81 +1,59 @@
 import os
-import time
-import shutil
-import aiofiles
-import requests
-from pyrogram import Client
+import aiohttp
+import asyncio
+import logging
 from pyrogram.types import Message
-from progress import progress_hook, send_action
-from info import API_ENDPOINT, DOWNLOADS_DIR, EMOJIS
+from progress import ProgressBar
+from info import TERABOX_API
 
-# Active task tracker
-active_tasks = {}
+# Logger setup
+logger = logging.getLogger("Fᴛᴍ Dᴇᴠᴇʟᴏᴘᴇʀᴢ")
 
-# Cancel task
-async def cancel_task(user_id):
-    if user_id in active_tasks:
-        active_tasks[user_id]["cancelled"] = True
-
-# Download file using provided API
-async def download_file(user_id, link, message: Message):
-    start_time = time.time()
-    msg = await message.reply(f"{EMOJIS['download']} Fetching download link...", quote=True)
-
+async def fetch_direct_link(terabox_url: str) -> str:
     try:
-        response = requests.get(f"{API_ENDPOINT}?link={link}")
-        data = response.json()
-        if not data.get("success"):
-            return await msg.edit(f"{EMOJIS['error']} Failed to get download link.")
-
-        file_url = data.get("download_link")
-        file_name = data.get("file_name")
-        file_size = int(data.get("file_size", 0))
-
-        file_path = os.path.join(DOWNLOADS_DIR, f"{user_id}_{file_name}")
-        active_tasks[user_id] = {"cancelled": False}
-
-        async with aiofiles.open(file_path, "wb") as f:
-            downloaded = 0
-            with requests.get(file_url, stream=True) as r:
-                for chunk in r.iter_content(chunk_size=4096):
-                    if active_tasks[user_id]["cancelled"]:
-                        await msg.edit(f"{EMOJIS['cancel']} Task cancelled.")
-                        return None
-                    await f.write(chunk)
-                    downloaded += len(chunk)
-                    await progress_hook(downloaded, file_size, msg, start_time, task="ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ")
-
-        await msg.edit(f"{EMOJIS['done']} Download complete. Uploading...")
-        return file_path
-
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{TERABOX_API}{terabox_url}") as resp:
+                data = await resp.json()
+                return data.get("downloadUrl")
     except Exception as e:
-        return await msg.edit(f"{EMOJIS['error']} Error: `{str(e)}`")
+        logger.error(f"[Fetch Error] {e}")
+        return None
 
-# Upload file to Telegram
-async def upload_file(client: Client, message: Message, file_path: str):
-    start_time = time.time()
-    file_name = os.path.basename(file_path)
-    file_size = os.path.getsize(file_path)
-
-    await send_action(client, message.chat.id, "upload_document")
-
-    msg = await message.reply(f"{EMOJIS['upload']} Uploading `{file_name}`...", quote=True)
-
-    async def progress(current, total):
-        await progress_hook(current, total, msg, start_time, task="ᴜᴘʟᴏᴀᴅɪɴɢ")
-
+async def download_file(url: str, filename: str, progress: ProgressBar, message: Message):
     try:
-        await client.send_document(
-            chat_id=message.chat.id,
-            document=file_path,
-            caption=f"{EMOJIS['done']} Uploaded: `{file_name}`",
-            progress=progress,
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                total = int(response.headers.get('Content-Length', 0))
+                downloaded = 0
+
+                with open(filename, 'wb') as f:
+                    async for chunk in response.content.iter_chunked(1024):
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        await progress.update_progress(
+                            current=downloaded,
+                            total=total,
+                            status="ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ",
+                            message=message
+                        )
+        return filename
+    except Exception as e:
+        logger.error(f"[Download Error] {e}")
+        return None
+
+async def upload_to_telegram(filepath: str, message: Message, progress: ProgressBar):
+    try:
+        total = os.path.getsize(filepath)
+        sent = await message.reply_document(
+            document=filepath,
+            caption="✔️ ᴜᴘʟᴏᴀᴅᴇᴅ ʙʏ Fᴛᴍ Dᴇᴠᴇʟᴏᴘᴇʀᴢ",
+            progress=progress.upload_progress,
         )
-        await msg.delete()
+        return sent
     except Exception as e:
-        await msg.edit(f"{EMOJIS['error']} Upload failed: `{e}`")
+        logger.error(f"[Upload Error] {e}")
+        return None
     finally:
-        try:
-            os.remove(file_path)
-        except:
-            pass
+        await asyncio.sleep(3)
+        os.remove(filepath)
+        logger.info(f"[Auto Deleted] {filepath}")
