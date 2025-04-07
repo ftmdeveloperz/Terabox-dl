@@ -1,4 +1,4 @@
-# info.py
+
 
 import os
 
@@ -7,7 +7,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "your_bot_token_here")
 API_ID = int(os.getenv("API_ID", "123456"))
 API_HASH = os.getenv("API_HASH", "your_api_hash_here")
 
-# Bot Identity
+# Bot Credentials 
 BOT_NAME = os.getenv("BOT_NAME", "Fᴛᴍ TᴇʀᴀBᴏx")
 OWNER_ID = int(os.getenv("OWNER_ID", "123456789"))
 
@@ -30,3 +30,4 @@ START_TXT = f"""
 
 ᴄʀᴇᴀᴛᴇᴅ ʙʏ: @ftmdeveloperz
 """
+PORT = int(os.getenv("PORT", 8080))
