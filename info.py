@@ -8,6 +8,7 @@ API_HASH = environ.get("API_HASH", "0c8f8bd171e05e42d6f6e5a6f4305389")
 
 # Bot Details
 BOT_NAME = getenv("BOT_NAME", "Fᴛᴍ TᴇʀᴀBᴏx")
+BOT_USERNAME = os.getenv("BOT_USERNAME", "FtmTeraboxBot")
 OWNER_ID = int(getenv("OWNER_ID", "7744665378"))
 
 # External API for TeraBox Direct Link
