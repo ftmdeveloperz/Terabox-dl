@@ -18,6 +18,7 @@ TERABOX_API = os.getenv("TERABOX_API", "https://tera-dl.vercel.app/api?link=")
 # Symbols for Progress Bar
 FILLED = os.getenv("FILLED", "■")
 EMPTY = os.getenv("EMPTY", "□")
+SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
 
 
