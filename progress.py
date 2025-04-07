@@ -2,7 +2,7 @@ import math
 import time
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram import Client
-from utils import cancel_task, is_task_cancelled
+from handlers import cancel_task, is_task_cancelled
 
 PROGRESS_BAR = ["□"] * 20
 
