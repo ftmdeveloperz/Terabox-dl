@@ -1,80 +1,75 @@
 import math
-import psutil
-import asyncio
+import time
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from info import (
-    FILLED, EMPTY, SPINNER_FRAMES, SPIN_SPEED,
-)
+from pyrogram.enums import ChatAction
 
-def human_readable_size(size: int) -> str:
-    if size == 0:
-        return "0B"
-    power = 1024
+PROGRESS_EMOJIS = ["□", "■"]
+CANCEL_BUTTON = InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data="cancel")]])
+
+def format_size(size):
+    power = 2**10
     n = 0
     units = ["B", "KB", "MB", "GB", "TB"]
-    while size >= power and n < len(units) - 1:
+    while size > power and n < len(units)-1:
         size /= power
         n += 1
     return f"{size:.2f}{units[n]}"
 
-def progress_bar(current: int, total: int, width: int = 20) -> str:
-    filled_len = int(width * current // total) if total else 0
-    bar = FILLED * filled_len + EMPTY * (width - filled_len)
-    percent = (current / total * 100) if total else 0
-    return f"[{bar}] {percent:.2f}%"
+def get_progress_bar(percent):
+    filled = int(percent // 5)
+    empty = 20 - filled
+    return f"[{'■' * filled}{'□' * empty}] {percent:.2f}%"
 
-def get_system_usage() -> str:
-    cpu = psutil.cpu_percent()
-    ram = psutil.virtual_memory().percent
-    return f"🏮 ᴄᴘᴜ : {cpu}%  |  ʀᴀᴍ : {ram}%"
+async def update_progress(
+    message,
+    current,
+    total,
+    speed,
+    start_time,
+    task="ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ",
+    tag="",
+    keyboard=None
+):
+    if not keyboard:
+        keyboard = CANCEL_BUTTON
+    percent = current * 100 / total if total else 0
+    elapsed = time.time() - start_time
+    eta = (total - current) / speed if speed != 0 else 0
 
-def get_eta(speed: float, remaining: int) -> str:
-    if speed == 0:
-        return "∞"
-    eta = remaining / speed
-    return time_formatter(eta)
+    bar = get_progress_bar(percent)
+    text = f"""╭───────{task.upper()}───────〄
+│
+├📁 sɪᴢᴇ : {format_size(current)} ✗ {format_size(total)}
+├📦 ᴘʀᴏɢʀᴇꜱꜱ : {percent:.2f}%
+├🚀 sᴘᴇᴇᴅ : {format_size(speed)}/s
+├⏱️ ᴇᴛᴀ : {time.strftime('%H:%M:%S', time.gmtime(eta))}
+╰─{bar}
+{tag}
+"""
 
-def time_formatter(seconds) -> str:
-    seconds = int(seconds)
-    hours, seconds = divmod(seconds, 3600)
-    minutes, seconds = divmod(seconds, 60)
-    return f"{hours:02}:{minutes:02}:{seconds:02}"
+    try:
+        await message.edit(text, reply_markup=keyboard)
+    except Exception:
+        pass
 
-async def generate_progress_msg(task: str, filename: str, current: int, total: int, speed: float, frame: str):
-    size_text = f"📁 sɪᴢᴇ : {human_readable_size(current)} ✗ {human_readable_size(total)}"
-    progress_text = f"📦 ᴘʀᴏɢʀᴇꜱꜱ : {(current / total) * 100:.2f}%"
-    speed_text = f"🚀 sᴘᴇᴇᴅ : {human_readable_size(speed)}/s"
-    eta_text = f"⏱️ ᴇᴛᴀ : {get_eta(speed, total - current)}"
-    sys_text = get_system_usage()
-    bar = progress_bar(current, total)
+async def progress_hook(current, total, message, start_time, task="ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ", tag=""):
+    now = time.time()
+    elapsed_time = now - start_time
+    speed = current / elapsed_time if elapsed_time > 0 else 0
 
-    return (
-        f"╭───────{task.upper()}{frame}───────〄\n"
-        f"│\n"
-        f"├{size_text}\n"
-        f"├{progress_text}\n"
-        f"├{speed_text}\n"
-        f"├{eta_text}\n"
-        f"├{sys_text}\n"
-        f"╰─{bar}"
-    )
+    if elapsed_time % 5 == 0 or current == total:
+        await update_progress(
+            message=message,
+            current=current,
+            total=total,
+            speed=speed,
+            start_time=start_time,
+            task=task,
+            tag=tag,
+        )
 
-async def progress_loop(task: str, message, filename: str, current: int, total: int, speed_func, user_id: int):
-    i = 0
-    while current < total:
-        speed = speed_func()
-        frame = SPINNER_FRAMES[i % len(SPINNER_FRAMES)]
-        i += 1
-        text = await generate_progress_msg(task, filename, current, total, speed, frame)
-
-        try:
-            await message.edit_text(
-                text=text,
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("❌ ᴄᴀɴᴄᴇʟ", callback_data=f"cancel_{user_id}")]
-                ])
-            )
-        except:
-            pass
-
-        await asyncio.sleep(SPIN_SPEED)
+async def send_action(bot, chat_id, action):
+    try:
+        await bot.send_chat_action(chat_id, action)
+    except Exception:
+        pass
