@@ -1,75 +1,65 @@
 import math
 import time
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from pyrogram.enums import ChatAction
+from pyrogram import Client
+from utils import cancel_task, is_task_cancelled
 
-PROGRESS_EMOJIS = ["□", "■"]
-CANCEL_BUTTON = InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data="cancel")]])
+PROGRESS_BAR = ["□"] * 20
 
-def format_size(size):
-    power = 2**10
+def create_cancel_button(task_id: str):
+    return InlineKeyboardMarkup([[
+        InlineKeyboardButton("❌ Cancel", callback_data=f"cancel_{task_id}")
+    ]])
+
+def human_readable_size(size):
+    if not size:
+        return "0B"
+    power = 1024
     n = 0
-    units = ["B", "KB", "MB", "GB", "TB"]
-    while size > power and n < len(units)-1:
+    Dic_powerN = {0: '', 1: 'KB', 2: 'MB', 3: 'GB', 4: 'TB'}
+    while size > power:
         size /= power
         n += 1
-    return f"{size:.2f}{units[n]}"
+    return f"{round(size, 2)} {Dic_powerN[n]}"
 
-def get_progress_bar(percent):
-    filled = int(percent // 5)
-    empty = 20 - filled
-    return f"[{'■' * filled}{'□' * empty}] {percent:.2f}%"
+def format_bar(percent):
+    done = round(percent / 5)
+    return "▣" * done + "□" * (20 - done)
 
-async def update_progress(
+async def progress_hook(
+    current: int,
+    total: int,
     message,
-    current,
-    total,
-    speed,
-    start_time,
-    task="ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ",
-    tag="",
-    keyboard=None
+    task_id: str,
+    action: str = "Uploading",
+    start_time: float = None
 ):
-    if not keyboard:
-        keyboard = CANCEL_BUTTON
-    percent = current * 100 / total if total else 0
-    elapsed = time.time() - start_time
-    eta = (total - current) / speed if speed != 0 else 0
+    if is_task_cancelled(task_id):
+        await cancel_task(task_id, message)
+        return
 
-    bar = get_progress_bar(percent)
-    text = f"""╭───────{task.upper()}───────〄
+    now = time.time()
+    speed = current / (now - start_time) if start_time else 0
+    eta = (total - current) / speed if speed else 0
+
+    percentage = current * 100 / total
+    bar = format_bar(percentage)
+    current_read = human_readable_size(current)
+    total_read = human_readable_size(total)
+    speed_read = human_readable_size(speed)
+    eta_read = time.strftime("%H:%M:%S", time.gmtime(eta))
+
+    text = f"""
+╭───────{action}───────〄
 │
-├📁 sɪᴢᴇ : {format_size(current)} ✗ {format_size(total)}
-├📦 ᴘʀᴏɢʀᴇꜱꜱ : {percent:.2f}%
-├🚀 sᴘᴇᴇᴅ : {format_size(speed)}/s
-├⏱️ ᴇᴛᴀ : {time.strftime('%H:%M:%S', time.gmtime(eta))}
-╰─{bar}
-{tag}
+├📁 sɪᴢᴇ : {current_read} ✗ {total_read}
+├📦 ᴘʀᴏɢʀᴇꜱꜱ : {round(percentage, 2)}%
+├🚀 sᴘᴇᴇᴅ : {speed_read}/s
+├⏱️ ᴇᴛᴀ : {eta_read}
+╰─[{bar}] {round(percentage, 2)}%
 """
 
     try:
-        await message.edit(text, reply_markup=keyboard)
-    except Exception:
-        pass
-
-async def progress_hook(current, total, message, start_time, task="ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ", tag=""):
-    now = time.time()
-    elapsed_time = now - start_time
-    speed = current / elapsed_time if elapsed_time > 0 else 0
-
-    if elapsed_time % 5 == 0 or current == total:
-        await update_progress(
-            message=message,
-            current=current,
-            total=total,
-            speed=speed,
-            start_time=start_time,
-            task=task,
-            tag=tag,
-        )
-
-async def send_action(bot, chat_id, action):
-    try:
-        await bot.send_chat_action(chat_id, action)
+        await message.edit(text, reply_markup=create_cancel_button(task_id))
     except Exception:
         pass
