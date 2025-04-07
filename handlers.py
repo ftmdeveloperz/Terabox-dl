@@ -4,15 +4,14 @@ import asyncio
 import logging
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
-from progress import ProgressBar
-from info import TERABOX_API, START_TEXT, REPO_TEXT, BOT_USERNAME, OWNER_ID
-from utils import handle_task, get_stats, get_queue
-from progress import cancel_task
+from progress import ProgressBar, cancel_task
+from info import START_TEXT, REPO_TEXT, BOT_USERNAME, OWNER_ID, TERABOX_API
 
 # Logger setup
 logger = logging.getLogger("Fᴛᴍ Dᴇᴠᴇʟᴏᴘᴇʀᴢ")
 
 # Utility functions
+
 async def fetch_direct_link(terabox_url: str) -> str:
     try:
         async with aiohttp.ClientSession() as session:
@@ -62,6 +61,7 @@ async def upload_to_telegram(filepath: str, message: Message, progress: Progress
         logger.info(f"[Auto Deleted] {filepath}")
 
 # Handlers
+
 @Client.on_message(filters.command("start") & filters.private)
 async def start_cmd(client, message: Message):
     keyboard = InlineKeyboardMarkup([
