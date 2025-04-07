@@ -1,0 +1,19 @@
+services:
+  - name: ftm-terabox-bot
+    startCommand: bash start.sh
+    envVars:
+      - key: API_ID
+        value: ${API_ID}
+      - key: API_HASH
+        value: ${API_HASH}
+      - key: BOT_TOKEN
+        value: ${BOT_TOKEN}
+      - key: PORT
+        value: ${PORT}
+      - key: OWNER_ID
+        value: ${OWNER_ID}
+      - key: LOG_CHANNEL
+        value: ${LOG_CHANNEL}
+    healthcheckPath: /
+    autoDeploy: true
+    restartPolicyType: ON_FAILURE
