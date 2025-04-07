@@ -1,0 +1,32 @@
+# info.py
+
+import os
+
+# Telegram Bot & API Configuration
+BOT_TOKEN = os.getenv("BOT_TOKEN", "your_bot_token_here")
+API_ID = int(os.getenv("API_ID", "123456"))
+API_HASH = os.getenv("API_HASH", "your_api_hash_here")
+
+# Bot Identity
+BOT_NAME = os.getenv("BOT_NAME", "Fᴛᴍ TᴇʀᴀBᴏx")
+OWNER_ID = int(os.getenv("OWNER_ID", "123456789"))
+
+# External API for TeraBox direct link
+TERABOX_API = os.getenv("TERABOX_API", "https://tera-dl.vercel.app/api?link=")
+
+# Symbols for Progress Bar
+FILLED = os.getenv("FILLED", "■")
+EMPTY = os.getenv("EMPTY", "□")
+
+# Start Message Text
+START_TXT = f"""
+**ʜᴇʏ, ɪ'ᴍ {BOT_NAME}**
+ꜱᴇɴᴅ ᴍᴇ ᴀɴʏ ᴛᴇʀᴀʙᴏx ʟɪɴᴋ ᴀɴᴅ ɪ ᴡɪʟʟ ꜰᴇᴛᴄʜ ᴅɪʀᴇᴄᴛ ᴅᴏᴡɴʟᴏᴀᴅ ʟɪɴᴋ & ᴜᴘʟᴏᴀᴅ ɪᴛ ᴛᴏ ᴛᴇʟᴇɢʀᴀᴍ.
+
+➪ ꜰᴀꜱᴛ ᴜᴘʟᴏᴀᴅ ᴡɪᴛʜ ᴘʀᴏɢʀᴇꜱꜱ ʙᴀʀ
+➪ ꜱᴜᴘᴘᴏʀᴛꜱ ʟᴀʀɢᴇ ꜰɪʟᴇꜱ
+➪ ᴀᴜᴛᴏ ᴅᴇʟᴇᴛɪᴏɴ ꜰʀᴏᴍ ꜱᴇʀᴠᴇʀ
+➪ ꜱᴛᴀᴛꜱ, ǫᴜᴇᴜᴇ & ᴀᴅᴍɪɴ ꜱʏꜱᴛᴇᴍ
+
+ᴄʀᴇᴀᴛᴇᴅ ʙʏ: @ftmdeveloperz
+"""
