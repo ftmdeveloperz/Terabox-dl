@@ -1,7 +1,6 @@
 import psutil
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
-from info import START_TEXT, BOT_USERNAME
 from utils import (
     start_download, cancel_tasks_for_user,
     get_user_queue, format_bytes
