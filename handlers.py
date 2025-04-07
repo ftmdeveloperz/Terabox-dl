@@ -1,138 +1,152 @@
-import os
-import aiohttp
-import asyncio
-import time
-import logging
+# handlers.py
+
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+import requests
+import time
+import psutil
+from info import TERABOX_API
 
-# Logger setup
-logger = logging.getLogger("Fᴛᴍ Dᴇᴠᴇʟᴏᴘᴇʀᴢ")
+# Function to format file sizes
+def format_size(size):
+    if size > 1e9:
+        return f"{size / 1e9:.2f} GB"
+    elif size > 1e6:
+        return f"{size / 1e6:.2f} MB"
+    elif size > 1e3:
+        return f"{size / 1e3:.2f} KB"
+    else:
+        return f"{size} B"
 
-# ProgressBar class to manage download/upload progress
-class ProgressBar:
-    def __init__(self, message: Message):
-        self.message = message
-        self.total = 0
-        self.current = 0
+# Function to calculate ETA
+def calculate_eta(start_time, current, total):
+    elapsed_time = time.time() - start_time
+    if current == 0:
+        return "calculating..."
+    speed = current / elapsed_time  # bytes per second
+    remaining = total - current
+    eta = remaining / speed
+    return time.strftime('%H:%M:%S', time.gmtime(eta))
 
-    # Update progress bar during download/upload
-    async def update_progress(self, current: int, total: int, status: str, message: Message):
-        self.current = current
-        self.total = total
-        percent = (current / total) * 100
-        progress = '■' * int(percent / 5) + '□' * (20 - int(percent / 5))
-        await message.edit(f"{status}\n{progress} {percent:.2f}%")
+# Handle download command (terabox link)
+@Client.on_message(filters.regex(r'https://www\.terabox\.com/s/.+'))
+async def download(client: Client, message: Message):
+    user_id = message.from_user.id
+    terabox_link = message.text.strip()
 
-    # For uploading progress bar
-    async def upload_progress(self, current: int, total: int):
-        percent = (current / total) * 100
-        progress = '■' * int(percent / 5) + '□' * (20 - int(percent / 5))
-        return f"{progress} {percent:.2f}%"
+    # Fetch file details using your TeraBox API
+    response = requests.get(f"{TERABOX_API}{terabox_link}")
+    data = response.json()
 
-# Function to cancel task
-async def cancel_task(user_id: int, message: Message):
-    # Add task cancellation logic here, e.g., cancel a download task
-    await message.edit(f"Task for user {user_id} has been canceled.")
-    # Implement any additional logic to stop ongoing tasks
-    return f"Task for user {user_id} has been canceled."
+    if data.get("status") == "success":
+        file_name = data["file_name"]
+        file_size = data["file_size"]
+        download_link = data["download_link"]
+        file_preview = data.get("thumbnail", "https://example.com/thumbnail.jpg")  # Simulated thumbnail URL
 
-# Fetch direct download link from Terabox
-async def fetch_direct_link(terabox_url: str) -> str:
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{TERABOX_API}{terabox_url}") as resp:
-                data = await resp.json()
-                return data.get("downloadUrl")
-    except Exception as e:
-        logger.error(f"[Fetch Error] {e}")
-        return None
+        # Format file size for better readability
+        formatted_size = format_size(file_size)
 
-# Function to download file with progress
-async def download_file(url: str, filename: str, progress: ProgressBar, message: Message, task_id: str):
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                total = int(response.headers.get('Content-Length', 0))
-                downloaded = 0
-                start_time = time.time()
-
-                with open(filename, 'wb') as f:
-                    async for chunk in response.content.iter_chunked(1024):
-                        f.write(chunk)
-                        downloaded += len(chunk)
-                        await progress.update_progress(
-                            current=downloaded,
-                            total=total,
-                            status="ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ",
-                            message=message
-                        )
-                        # Check if task is canceled
-                        if await is_task_cancelled(task_id):
-                            await cancel_task(task_id, message)
-                            break
-        return filename
-    except Exception as e:
-        logger.error(f"[Download Error] {e}")
-        return None
-
-# Function to check if a task is canceled
-async def is_task_cancelled(task_id: str) -> bool:
-    # Logic to check if a task is canceled based on the task_id
-    # This could involve checking a database, cache, or in-memory task state.
-    return False  # Placeholder for actual task cancellation check
-
-# Upload the file to Telegram
-async def upload_to_telegram(filepath: str, message: Message, progress: ProgressBar):
-    try:
-        total = os.path.getsize(filepath)
-        sent = await message.reply_document(
-            document=filepath,
-            caption="✔️ ᴜᴘʟᴏᴀᴅᴇᴅ ʙʏ Fᴛᴍ Dᴇᴠᴇʟᴏᴘᴇʀᴢ",
-            progress=progress.upload_progress,
+        # Send file preview (thumbnail) along with file name and size
+        await message.reply_photo(
+            photo=file_preview,
+            caption=f"📄 **File Name**: {file_name}\n📏 **File Size**: {formatted_size}",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("⬇️ ᴅᴏᴡɴʟᴏᴀᴅ", url=download_link)]
+            ])
         )
-        return sent
-    except Exception as e:
-        logger.error(f"[Upload Error] {e}")
-        return None
-    finally:
-        await asyncio.sleep(3)
-        os.remove(filepath)
-        logger.info(f"[Auto Deleted] {filepath}")
 
-# Command Handlers
+        # Simulate the download process with a progress bar
+        total_size = file_size
+        start_time = time.time()
 
-@Client.on_message(filters.command("start") & filters.private)
-async def start_cmd(client, message: Message):
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("⚙️ Hᴇʟᴘ", callback_data="help")],
-        [InlineKeyboardButton("🔗 Sᴇɴᴅ Lɪɴᴋ", switch_inline_query_current_chat="")],
-        [InlineKeyboardButton("🛠️ Sᴏᴜʀᴄᴇ / Rᴇᴘᴏ", callback_data="repo")],
-        [InlineKeyboardButton("👑 Dᴇᴠᴇʟᴏᴘᴇʀ", url="https://t.me/ftmdeveloperz")]
-    ])
-    await message.reply_text(START_TEXT.format(message.from_user.first_name), reply_markup=keyboard, disable_web_page_preview=True)
+        progress = 0
+        while progress < total_size:
+            progress += 1024 * 1024  # Simulating 1MB download per loop iteration
+            speed = 1024 * 50  # Simulating speed of 50KB/s
+            eta = calculate_eta(start_time, progress, total_size)
+            cpu_usage = psutil.cpu_percent(interval=1)
+            ram_usage = psutil.virtual_memory().percent
 
-@Client.on_callback_query(filters.regex("help"))
-async def help_cb(_, query):
-    await query.message.edit(
-        "🔧 Hᴏᴡ Tᴏ Usᴇ TᴇʀᴀBᴏx Bᴏᴛ:\n\n"
-        "1. Sᴇɴᴅ ᴀɴʏ Tᴇʀᴀʙᴏx Lɪɴᴋ\n"
-        "2. Wᴀɪᴛ ғᴏʀ ᴅᴏᴡɴʟᴏᴀᴅ & ᴜᴘʟᴏᴀᴅ\n"
-        "3. Rᴇᴄᴇɪᴠᴇ ғɪʟᴇ ᴅɪʀᴇᴄᴛʟʏ ɪɴ ᴛɪɴʏ ᴘᴀᴄᴋᴀɢᴇ", 
-        reply_markup=InlineKeyboardMarkup([ 
-            [InlineKeyboardButton("↩️ Bᴀᴄᴋ", callback_data="start")]
-        ])
-    )
+            # Display progress bar
+            progress_bar = "■" * int(progress / total_size * 40) + "□" * (40 - int(progress / total_size * 40))
+            status_message = f"""
+╭───────ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ───────〄
+│
+├📁 sɪᴢᴇ : {formatted_size} ✗ {format_size(progress)}
+├📦 ᴘʀᴏɢʀᴇꜱꜱ : {progress / total_size * 100:.2f}%
+├🚀 sᴘᴇᴇᴅ : {speed / 1024:.2f}KB/s
+├⏱️ ᴇᴛᴀ : {eta}
+├🏮 ᴄᴘᴜ : {cpu_usage}%  |  ʀᴀᴍ : {ram_usage}%
+╰─[{progress_bar}]─〄
+            """
 
-@Client.on_callback_query(filters.regex("repo"))
-async def repo_cb(_, query):
-    await query.message.edit(REPO_TEXT, reply_markup=InlineKeyboardMarkup([ 
-        [InlineKeyboardButton("↩️ Bᴀᴄᴋ", callback_data="start")]
-    ]))
+            await message.reply(status_message, quote=True)
 
-@Client.on_message(filters.command("queue"))
-async def queue_cb(_, message: Message):
-    # Show queue status
-    await message.reply_text("Queue is empty. No tasks currently in progress.")
+            # Wait a bit before updating progress
+            time.sleep(1)
 
-# Additional handlers as required
+        # Once done, send the download completion message
+        await message.reply("🎉 ᴅᴏᴡɴʟᴏᴀᴅ ᴄᴏᴍᴘʟᴇᴛᴇ! ᴇɴᴏʏ ᴛʜᴇ ꜰɪʟᴇ 📥", quote=True)
+
+
+# Handle upload command (terabox link)
+@Client.on_message(filters.regex(r'https://www\.terabox\.com/s/.+'))
+async def upload(client: Client, message: Message):
+    user_id = message.from_user.id
+    terabox_link = message.text.strip()
+
+    # Fetch file details using your TeraBox API
+    response = requests.get(f"{TERABOX_API}{terabox_link}")
+    data = response.json()
+
+    if data.get("status") == "success":
+        file_name = data["file_name"]
+        file_size = data["file_size"]
+        upload_link = data["upload_link"]
+        file_preview = data.get("thumbnail", "https://example.com/thumbnail.jpg")  # Simulated thumbnail URL
+
+        # Format file size for better readability
+        formatted_size = format_size(file_size)
+
+        # Send file preview (thumbnail) along with file name and size
+        await message.reply_photo(
+            photo=file_preview,
+            caption=f"📄 **File Name**: {file_name}\n📏 **File Size**: {formatted_size}",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔼 ᴜᴘʟᴏᴀᴅ", url=upload_link)]
+            ])
+        )
+
+        # Simulate the upload process with a progress bar
+        total_size = file_size
+        start_time = time.time()
+
+        progress = 0
+        while progress < total_size:
+            progress += 1024 * 1024  # Simulating 1MB upload per loop iteration
+            speed = 1024 * 50  # Simulating speed of 50KB/s
+            eta = calculate_eta(start_time, progress, total_size)
+            cpu_usage = psutil.cpu_percent(interval=1)
+            ram_usage = psutil.virtual_memory().percent
+
+            # Display progress bar
+            progress_bar = "■" * int(progress / total_size * 40) + "□" * (40 - int(progress / total_size * 40))
+            status_message = f"""
+╭───────ᴜᴘʟᴏᴀᴅɪɴɢ───────〄
+│
+├📁 sɪᴢᴇ : {formatted_size} ✗ {format_size(progress)}
+├📦 ᴘʀᴏɢʀᴇꜱꜱ : {progress / total_size * 100:.2f}%
+├🚀 sᴘᴇᴇᴅ : {speed / 1024:.2f}KB/s
+├⏱️ ᴇᴛᴀ : {eta}
+├🏮 ᴄᴘᴜ : {cpu_usage}%  |  ʀᴀᴍ : {ram_usage}%
+╰─[{progress_bar}]─〄
+            """
+
+            await message.reply(status_message, quote=True)
+
+            # Wait a bit before updating progress
+            time.sleep(1)
+
+        # Once done, send the upload completion message
+        await message.reply("🎉 ᴜᴘʟᴏᴀᴅ ᴄᴏᴍᴘʟᴇᴛᴇ! ᴇɴᴏʏ ᴛʜᴇ ᴜᴘʟᴏᴀᴅᴇᴅ ꜰɪʟᴇ 🔼", quote=True)
