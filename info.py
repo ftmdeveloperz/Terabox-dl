@@ -20,6 +20,7 @@ FILLED = os.getenv("FILLED", "■")
 EMPTY = os.getenv("EMPTY", "□")
 SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
+SPIN_SPEED = 0.15 
 
 
 START_TEXT = "Welcome to the bot!"
